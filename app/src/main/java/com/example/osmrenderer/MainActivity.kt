@@ -11,12 +11,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        gLView = MapView(this)
-        setContentView(gLView)
 
         System.loadLibrary("sqliteX")
-
         val db = DBHelper(this)
-        db.getNode()
+
+        gLView = MapView(this, db)
+        setContentView(gLView)
     }
 }

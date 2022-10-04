@@ -12,9 +12,10 @@ class Polygon(
 ) {
     private var mProgram: Int
     private val vertexShaderCode =
-        "attribute vec4 vPosition;" +
+        "uniform mat4 uMVPMatrix;" +
+                "attribute vec4 vPosition;" +
                 "void main() {" +
-                "  gl_Position = vPosition;" +
+                "  gl_Position = uMVPMatrix * vPosition;" +
                 "}"
 
     private val fragmentShaderCode =
@@ -25,6 +26,7 @@ class Polygon(
                 "}"
 
     private var positionHandle: Int = 0
+    private var vPMatrixHandle: Int = 0
     private var mColorHandle: Int = 0
     private var drawOrder = shortArrayOf()
 
@@ -66,7 +68,7 @@ class Polygon(
         }
     }
 
-    fun draw() {
+    fun draw(mvpMatrix: FloatArray) {
         GLES20.glUseProgram(mProgram)
         positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition").also {
             GLES20.glEnableVertexAttribArray(it)
@@ -78,9 +80,14 @@ class Polygon(
                 2 * 4,
                 vertexBuffer
             )
+
             mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
                 GLES20.glUniform4fv(colorHandle, 1, color, 0)
             }
+
+            vPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
+            GLES20.glUniformMatrix4fv(vPMatrixHandle, 1, false, mvpMatrix, 0)
+
             GLES20.glDrawElements(
                 GLES20.GL_TRIANGLES,
                 drawOrder.size,

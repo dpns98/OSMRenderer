@@ -6,6 +6,8 @@ import org.sqlite.database.sqlite.SQLiteDatabase
 import org.sqlite.database.sqlite.SQLiteOpenHelper
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.ln
+import kotlin.math.tan
 
 const val dbName = "SQLITE_DB"
 const val dbVersionNumber = 1
@@ -57,6 +59,30 @@ class DBHelper(private val context: Context) : SQLiteOpenHelper(context, dbName,
     override fun close() {
         dataBase?.close()
         super.close()
+    }
+
+    val RADIUS = 6378137.0
+    fun lat2y(aLat: Float): Float {
+        return (ln(tan(Math.PI / 4 + Math.toRadians(aLat.toDouble()) / 2)) * RADIUS).toFloat()
+    }
+
+    fun lon2x(aLong: Float): Float {
+        return (Math.toRadians(aLong.toDouble()) * RADIUS).toFloat()
+    }
+
+    fun getWayNodes(id: Int): FloatArray{
+        openDatabase()
+        val cursor = dataBase?.rawQuery("select lon, lat from nodes n join way_nodes wn on n.node_id = wn.node_id where wn.way_id = $id", null)
+
+        val coords = mutableListOf<Float>()
+        while (cursor!!.moveToNext()) {
+            coords.add(lon2x(cursor.getFloat(0)))
+            coords.add(lat2y(cursor.getFloat(1)))
+        }
+
+        cursor.close()
+        close()
+        return coords.toFloatArray()
     }
 
     fun getNode() {
