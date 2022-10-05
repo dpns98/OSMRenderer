@@ -5,6 +5,8 @@ import android.opengl.GLSurfaceView
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import java.lang.Math.pow
+import kotlin.math.sqrt
 
 class MapView(context: Context, db: DBHelper) : GLSurfaceView(context) {
 
@@ -16,28 +18,57 @@ class MapView(context: Context, db: DBHelper) : GLSurfaceView(context) {
         setRenderer(renderer)
     }
 
-    var downX = 0.0f
-    var downY = 0.0f
+    var prevX = 0.0f
+    var prevY = 0.0f
+    var prevX1 = 0.0f
+    var prevY1 = 0.0f
+    var zooming = false
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
 
-        val x: Float = e.x
-        val y: Float = e.y
+        val x = e.getX(0)
+        val y = e.getY(0)
+        var x1 = 0f
+        var y1 = 0f
+        if (e.pointerCount > 1) {
+            x1 = e.getX(1)
+            y1 = e.getY(1)
+        }
 
-        when (e.action) {
+        when (e.action and MotionEvent.ACTION_MASK) {
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                zooming = true
+            }
             MotionEvent.ACTION_MOVE -> {
-                renderer.positionX += (downX - x) * 0.3f
-                renderer.positionY += (-downY + y) * 0.3f
+                if (!zooming) {
+                    renderer.positionX += (prevX - x) * 0.0003f * renderer.scale
+                    renderer.positionY += (y - prevY) * 0.0003f * renderer.scale
+                } else if (e.pointerCount > 1) {
+                    val d1 = sqrt((prevX-prevX1) * (prevX-prevX1) + (prevY-prevY1) * (prevY-prevY1))
+                    val d2 = sqrt((x-x1) * (x-x1) + (y-y1) * (y-y1))
+                    val ratio = d1/d2
+
+                    if (renderer.scale * ratio > 3f && renderer.scale * ratio < 10000f) {
+                        renderer.scale *= ratio
+                    }
+                }
                 requestRender()
             }
             MotionEvent.ACTION_UP -> {
-                renderer.velocityX += (downX - x)
-                renderer.velocityY += (-downY + y)
+                if (!zooming) {
+                    renderer.velocityX += (prevX - x)
+                    renderer.velocityY += (y - prevY)
+                }
+                zooming = false
             }
         }
 
-        downX = x
-        downY = y
+        prevX = x
+        prevY = y
+        if (e.pointerCount > 1) {
+            prevX1 = x1
+            prevY1 = y1
+        }
         return true
     }
 }

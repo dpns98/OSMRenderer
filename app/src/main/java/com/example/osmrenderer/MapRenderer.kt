@@ -22,6 +22,8 @@ class MapRenderer(val db: DBHelper) : GLSurfaceView.Renderer {
     var velocityX: Float = 0f
     @Volatile
     var velocityY: Float = 0f
+    @Volatile
+    var scale: Float = 1000f
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -31,7 +33,7 @@ class MapRenderer(val db: DBHelper) : GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         Matrix.setLookAtM(
             viewMatrix, 0,
-            positionX, positionY,1000f,
+            positionX, positionY,scale,
             positionX, positionY, 0f,
             0f, 1.0f, 0.0f
         )
@@ -51,7 +53,7 @@ class MapRenderer(val db: DBHelper) : GLSurfaceView.Renderer {
         GLES20.glViewport(0, 0, width, height)
 
         val ratio: Float = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 1000f)
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 10000f)
 
         polygon = Polygon(
             db.getWayNodes(31796280),
