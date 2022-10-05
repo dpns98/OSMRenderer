@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.abs
 
 class MapRenderer(val db: DBHelper) : GLSurfaceView.Renderer {
 
@@ -13,14 +14,36 @@ class MapRenderer(val db: DBHelper) : GLSurfaceView.Renderer {
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
 
+    @Volatile
+    var positionX: Float = 2279683.5f
+    @Volatile
+    var positionY: Float = 5587355.5f
+    @Volatile
+    var velocityX: Float = 0f
+    @Volatile
+    var velocityY: Float = 0f
+
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
     }
 
     override fun onDrawFrame(unused: GL10) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        Matrix.setLookAtM(viewMatrix, 0, 2279683.5f, 5587355.5f, 1000f,  2279683.5f, 5587355.5f,0f, 0f, 1.0f, 0.0f)
+        Matrix.setLookAtM(
+            viewMatrix, 0,
+            positionX, positionY,1000f,
+            positionX, positionY, 0f,
+            0f, 1.0f, 0.0f
+        )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+
+        if (abs(velocityY) > 0.001 || abs(velocityX) > 0.001) {
+            positionX -= velocityX
+            positionY -= velocityY
+            velocityX *= 0.96f
+            velocityY *= 0.96f
+        }
+
         polygon.draw(vPMatrix)
     }
 
