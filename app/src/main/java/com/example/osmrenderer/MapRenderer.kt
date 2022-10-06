@@ -31,7 +31,6 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
 
     override fun onDrawFrame(unused: GL10) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        GLES20.glDelete
         Matrix.setLookAtM(
             viewMatrix, 0,
             positionX, positionY,scale,

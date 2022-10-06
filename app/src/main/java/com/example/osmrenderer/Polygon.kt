@@ -97,8 +97,4 @@ class Polygon(
             GLES20.glDisableVertexAttribArray(it)
         }
     }
-
-    fun free() {
-        GLES20.glDeleteProgram(mProgram)
-    }
 }
