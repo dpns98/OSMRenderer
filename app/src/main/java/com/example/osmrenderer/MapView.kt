@@ -2,20 +2,23 @@ package com.example.osmrenderer
 
 import android.content.Context
 import android.opengl.GLSurfaceView
-import android.util.Log
-import android.view.GestureDetector
 import android.view.MotionEvent
-import java.lang.Math.pow
+import kotlin.math.atan
+import kotlin.math.exp
 import kotlin.math.sqrt
 
-class MapView(context: Context, db: DBHelper) : GLSurfaceView(context) {
+class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
 
     private val renderer: MapRenderer
+    private val density = (resources.displayMetrics.density * 160)
+    private val screenWidth = (resources.displayMetrics.widthPixels / density) * 0.0254f
+    private val screenHeight = (resources.displayMetrics.heightPixels / density) * 0.0254f
 
     init {
         setEGLContextClientVersion(2)
-        renderer = MapRenderer(db)
+        renderer = MapRenderer(db, screenWidth, screenHeight)
         setRenderer(renderer)
+        renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
     }
 
     var prevX = 0.0f
@@ -55,10 +58,6 @@ class MapView(context: Context, db: DBHelper) : GLSurfaceView(context) {
                 requestRender()
             }
             MotionEvent.ACTION_UP -> {
-                if (!zooming) {
-                    renderer.velocityX += (prevX - x)
-                    renderer.velocityY += (y - prevY)
-                }
                 zooming = false
             }
         }

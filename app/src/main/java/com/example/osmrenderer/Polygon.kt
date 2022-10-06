@@ -7,7 +7,7 @@ import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 
 class Polygon(
-    coords: FloatArray,
+    val coords: FloatArray,
     private val color: FloatArray
 ) {
     private var mProgram: Int
@@ -96,5 +96,9 @@ class Polygon(
             )
             GLES20.glDisableVertexAttribArray(it)
         }
+    }
+
+    fun free() {
+        GLES20.glDeleteProgram(mProgram)
     }
 }

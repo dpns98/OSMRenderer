@@ -70,6 +70,59 @@ class DBHelper(private val context: Context) : SQLiteOpenHelper(context, dbName,
         return (Math.toRadians(aLong.toDouble()) * RADIUS).toFloat()
     }
 
+    fun getIdsForExtent(extent: Extent): List<Polygon>{
+        openDatabase()
+        val cursor = dataBase?.rawQuery(
+            "select way_id from rtree_way " +
+                "where min_lon >= ${extent.minX} and max_lon <= ${extent.maxX} " +
+                "and min_lat >= ${extent.minY} and max_lat <= ${extent.maxY}",
+            null
+        )
+
+        val ids = mutableListOf<Int>()
+        while (cursor!!.moveToNext()) {
+            ids.add(cursor.getInt(0))
+        }
+
+        cursor.close()
+        close()
+
+        val polygons = mutableListOf<Polygon>()
+        ids.forEach {
+            polygons.add(
+                Polygon(
+                    getWayNodes(it),
+                    floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+                )
+            )
+        }
+        return polygons
+    }
+
+    fun getIdsForKey(key: String): List<Polygon>{
+        openDatabase()
+        val cursor = dataBase?.rawQuery("select way_id from way_tags where key = '$key' limit 100", null)
+
+        val ids = mutableListOf<Int>()
+        while (cursor!!.moveToNext()) {
+            ids.add(cursor.getInt(0))
+        }
+
+        cursor.close()
+        close()
+
+        val polygons = mutableListOf<Polygon>()
+        ids.forEach {
+            polygons.add(
+                Polygon(
+                    getWayNodes(it),
+                    floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+                )
+            )
+        }
+        return polygons
+    }
+
     fun getWayNodes(id: Int): FloatArray{
         openDatabase()
         val cursor = dataBase?.rawQuery("select lon, lat from nodes n join way_nodes wn on n.node_id = wn.node_id where wn.way_id = $id", null)
@@ -83,20 +136,5 @@ class DBHelper(private val context: Context) : SQLiteOpenHelper(context, dbName,
         cursor.close()
         close()
         return coords.toFloatArray()
-    }
-
-    fun getNode() {
-        openDatabase()
-        val cursor = dataBase?.rawQuery("select * from nodes where node_id = 25264054", null)
-
-        cursor?.moveToFirst()
-        val id = cursor?.getInt(0)
-        val lon = cursor?.getDouble(1)
-        val lat = cursor?.getDouble(2)
-
-        println("nesto $lon $lat")
-
-        cursor?.close()
-        close()
     }
 }
