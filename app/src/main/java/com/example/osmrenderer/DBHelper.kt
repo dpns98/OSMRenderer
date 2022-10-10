@@ -70,7 +70,7 @@ class DBHelper(private val context: Context) : SQLiteOpenHelper(context, dbName,
         return (Math.toRadians(aLong.toDouble()) * RADIUS).toFloat()
     }
 
-    fun getIdsForExtent(extent: Extent): List<Polygon>{
+    fun getIdsForExtent(extent: Extent): FloatArray{
         openDatabase()
         val cursor = dataBase?.rawQuery(
             "select way_id from rtree_way " +
@@ -96,7 +96,7 @@ class DBHelper(private val context: Context) : SQLiteOpenHelper(context, dbName,
                 )
             )
         }
-        return polygons
+        return polygons.flatMap { it.triangulationVertices }.toFloatArray()
     }
 
     fun getIdsForKey(key: String): List<Polygon>{

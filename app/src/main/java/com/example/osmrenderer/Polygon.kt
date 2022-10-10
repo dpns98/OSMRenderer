@@ -10,38 +10,17 @@ class Polygon(
     val coords: FloatArray,
     private val color: FloatArray
 ) {
-    private var mProgram: Int
-    private val vertexShaderCode =
-        "uniform mat4 uMVPMatrix;" +
-                "attribute vec4 vPosition;" +
-                "void main() {" +
-                "  gl_Position = uMVPMatrix * vPosition;" +
-                "}"
-
-    private val fragmentShaderCode =
-        "precision mediump float;" +
-                "uniform vec4 vColor;" +
-                "void main() {" +
-                "  gl_FragColor = vColor;" +
-                "}"
-
     private var positionHandle: Int = 0
     private var vPMatrixHandle: Int = 0
     private var mColorHandle: Int = 0
     private var drawOrder = shortArrayOf()
+    var triangulationVertices = listOf<Float>()
 
     init {
-        val vertexShader: Int = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
-        val fragmentShader: Int = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
-
-        mProgram = GLES20.glCreateProgram().also {
-            GLES20.glAttachShader(it, vertexShader)
-            GLES20.glAttachShader(it, fragmentShader)
-            GLES20.glLinkProgram(it)
-        }
         drawOrder = Triangulation.earcut(coords)
+        triangulationVertices = drawOrder
+            .flatMap {listOf(coords[it*2], coords[it*2+1])}
     }
-
 
     private val vertexBuffer: FloatBuffer =
         ByteBuffer.allocateDirect(coords.size * 4).run {
@@ -61,16 +40,9 @@ class Polygon(
             }
         }
 
-    private fun loadShader(type: Int, shaderCode: String): Int {
-        return GLES20.glCreateShader(type).also { shader ->
-            GLES20.glShaderSource(shader, shaderCode)
-            GLES20.glCompileShader(shader)
-        }
-    }
-
-    fun draw(mvpMatrix: FloatArray) {
-        GLES20.glUseProgram(mProgram)
-        positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition").also {
+    fun draw(mvpMatrix: FloatArray, program: Int) {
+        GLES20.glUseProgram(program)
+        positionHandle = GLES20.glGetAttribLocation(program, "vPosition").also {
             GLES20.glEnableVertexAttribArray(it)
             GLES20.glVertexAttribPointer(
                 it,
@@ -81,11 +53,11 @@ class Polygon(
                 vertexBuffer
             )
 
-            mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
+            mColorHandle = GLES20.glGetUniformLocation(program, "vColor").also { colorHandle ->
                 GLES20.glUniform4fv(colorHandle, 1, color, 0)
             }
 
-            vPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
+            vPMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
             GLES20.glUniformMatrix4fv(vPMatrixHandle, 1, false, mvpMatrix, 0)
 
             GLES20.glDrawElements(

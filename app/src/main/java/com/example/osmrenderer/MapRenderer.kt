@@ -3,6 +3,9 @@ package com.example.osmrenderer
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
@@ -14,10 +17,30 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
+    private val buffer = IntArray(1)
+    private var trianglesNum = 0
+
+    private var positionHandle: Int = 0
+    private var vPMatrixHandle: Int = 0
+    private var mColorHandle: Int = 0
+
+    private var mProgram: Int = 0
+    private val vertexShaderCode =
+        "uniform mat4 uMVPMatrix;" +
+                "attribute vec4 vPosition;" +
+                "void main() {" +
+                "  gl_Position = uMVPMatrix * vPosition;" +
+                "}"
+
+    private val fragmentShaderCode =
+        "precision mediump float;" +
+                "uniform vec4 vColor;" +
+                "void main() {" +
+                "  gl_FragColor = vColor;" +
+                "}"
+
     private val RADIUS = 6378137.0
 
-    @Volatile
-    var polygons = listOf<Polygon>()
     @Volatile
     var positionX: Float = 2279683.5f
     @Volatile
@@ -27,10 +50,25 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        val vertexShader: Int = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
+        val fragmentShader: Int = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
+
+        mProgram = GLES20.glCreateProgram().also {
+            GLES20.glAttachShader(it, vertexShader)
+            GLES20.glAttachShader(it, fragmentShader)
+            GLES20.glLinkProgram(it)
+        }
+    }
+
+    private fun loadShader(type: Int, shaderCode: String): Int {
+        return GLES20.glCreateShader(type).also { shader ->
+            GLES20.glShaderSource(shader, shaderCode)
+            GLES20.glCompileShader(shader)
+        }
     }
 
     override fun onDrawFrame(unused: GL10) {
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         Matrix.setLookAtM(
             viewMatrix, 0,
             positionX, positionY,scale,
@@ -39,10 +77,33 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
+        GLES20.glDeleteBuffers(1, buffer, 0)
+
         getGeometriesForExtent()
-        polygons.forEach {
-            it.draw(vPMatrix)
+
+        GLES20.glUseProgram(mProgram)
+        positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition")
+        mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
+            GLES20.glUniform4fv(colorHandle, 1, floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f), 0)
         }
+        vPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
+        GLES20.glUniformMatrix4fv(vPMatrixHandle, 1, false, vPMatrix, 0)
+
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
+        GLES20.glEnableVertexAttribArray(positionHandle)
+        GLES20.glVertexAttribPointer(
+            positionHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            0,
+            0
+        )
+        GLES20.glDrawArrays(
+            GLES20.GL_TRIANGLES,
+            0,
+            trianglesNum
+        )
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
@@ -67,6 +128,23 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
             y2lat(positionY - (screenHeight*scale)),
             y2lat(positionY + (screenHeight*scale))
         )
-        polygons = db.getIdsForExtent(extent)
+        val triangles = db.getIdsForExtent(extent)
+        trianglesNum = triangles.size
+        var vertexBuffer: FloatBuffer? =
+            ByteBuffer.allocateDirect(triangles.size * 4).run {
+                order(ByteOrder.nativeOrder())
+                asFloatBuffer().apply {
+                    put(triangles)
+                    position(0)
+                }
+            }
+
+        GLES20.glGenBuffers(1, buffer, 0)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertexBuffer!!.capacity()*4, vertexBuffer, GLES20.GL_STATIC_DRAW)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+
+        vertexBuffer.limit(0)
+        vertexBuffer = null
     }
 }
