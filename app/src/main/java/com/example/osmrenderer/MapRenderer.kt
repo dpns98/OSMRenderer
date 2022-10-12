@@ -17,12 +17,6 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
-    private val buffer = IntArray(1)
-    private var trianglesNum = 0
-
-    private var positionHandle: Int = 0
-    private var vPMatrixHandle: Int = 0
-    private var mColorHandle: Int = 0
 
     private var mProgram: Int = 0
     private val vertexShaderCode =
@@ -47,6 +41,10 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
     var positionY: Float = 5587355.5f
     @Volatile
     var scale: Float = 2000f
+    @Volatile
+    var polygons: List<Polygon> = listOf()
+    @Volatile
+    var lines: List<Line> = listOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -58,6 +56,9 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
             GLES20.glAttachShader(it, fragmentShader)
             GLES20.glLinkProgram(it)
         }
+
+        //polygons = db.getIdsForKey("building")
+        polygons = db.getIdsForKey("building")
     }
 
     private fun loadShader(type: Int, shaderCode: String): Int {
@@ -77,40 +78,24 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        GLES20.glDeleteBuffers(1, buffer, 0)
+        //GLES20.glDeleteBuffers(1, buffer, 0)
 
-        getGeometriesForExtent()
+        //getGeometriesForExtent()
 
-        GLES20.glUseProgram(mProgram)
-        positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition")
-        mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
-            GLES20.glUniform4fv(colorHandle, 1, floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f), 0)
+        polygons.forEach{
+            it.draw(vPMatrix, mProgram)
         }
-        vPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")
-        GLES20.glUniformMatrix4fv(vPMatrixHandle, 1, false, vPMatrix, 0)
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
-        GLES20.glEnableVertexAttribArray(positionHandle)
-        GLES20.glVertexAttribPointer(
-            positionHandle,
-            2,
-            GLES20.GL_FLOAT,
-            false,
-            0,
-            0
-        )
-        GLES20.glDrawArrays(
-            GLES20.GL_TRIANGLES,
-            0,
-            trianglesNum
-        )
+        lines.forEach{
+            it.draw(vPMatrix, mProgram)
+        }
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
 
         val ratio: Float = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 10000f)
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 100000f)
     }
 
     fun y2lat(aY: Float): Float {
@@ -129,22 +114,6 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
             y2lat(positionY + (screenHeight*scale))
         )
         val triangles = db.getIdsForExtent(extent)
-        trianglesNum = triangles.size
-        var vertexBuffer: FloatBuffer? =
-            ByteBuffer.allocateDirect(triangles.size * 4).run {
-                order(ByteOrder.nativeOrder())
-                asFloatBuffer().apply {
-                    put(triangles)
-                    position(0)
-                }
-            }
-
-        GLES20.glGenBuffers(1, buffer, 0)
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
-        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertexBuffer!!.capacity()*4, vertexBuffer, GLES20.GL_STATIC_DRAW)
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
-
-        vertexBuffer.limit(0)
-        vertexBuffer = null
+        //putTrianglesInBuffer(triangles)
     }
 }

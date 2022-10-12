@@ -4,36 +4,34 @@ import android.opengl.GLES20
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
-import java.nio.ShortBuffer
 
-class Polygon(
+class Line(
     val coords: FloatArray,
     private val color: FloatArray
 ) {
     private var positionHandle: Int = 0
     private var vPMatrixHandle: Int = 0
     private var mColorHandle: Int = 0
-    private var drawOrder = shortArrayOf()
-    var triangulationVertices: FloatArray
     private val buffer = IntArray(1)
 
     init {
-        drawOrder = Triangulation.earcut(coords)
-        triangulationVertices = drawOrder
-            .flatMap { listOf(coords[it * 2], coords[it * 2 + 1]) }.toFloatArray()
-
         var vertexBuffer: FloatBuffer? =
-            ByteBuffer.allocateDirect(triangulationVertices.size * 4).run {
+            ByteBuffer.allocateDirect(coords.size * 4).run {
                 order(ByteOrder.nativeOrder())
                 asFloatBuffer().apply {
-                    put(triangulationVertices)
+                    put(coords)
                     position(0)
                 }
             }
 
         GLES20.glGenBuffers(1, buffer, 0)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
-        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertexBuffer!!.capacity()*4, vertexBuffer, GLES20.GL_STATIC_DRAW)
+        GLES20.glBufferData(
+            GLES20.GL_ARRAY_BUFFER,
+            vertexBuffer!!.capacity() * 4,
+            vertexBuffer,
+            GLES20.GL_STATIC_DRAW
+        )
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
 
         vertexBuffer.limit(0)
@@ -60,9 +58,9 @@ class Polygon(
             0
         )
         GLES20.glDrawArrays(
-            GLES20.GL_TRIANGLES,
+            GLES20.GL_LINES,
             0,
-            triangulationVertices.size/2
+            coords.size/2
         )
     }
 }

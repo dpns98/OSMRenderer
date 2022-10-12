@@ -51,7 +51,7 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
                     val d2 = sqrt((x-x1) * (x-x1) + (y-y1) * (y-y1))
                     val ratio = d1/d2
 
-                    if (renderer.scale * ratio > 3f && renderer.scale * ratio < 10000f) {
+                    if (renderer.scale * ratio > 3f && renderer.scale * ratio < 100000f) {
                         renderer.scale *= ratio
                     }
                 }
