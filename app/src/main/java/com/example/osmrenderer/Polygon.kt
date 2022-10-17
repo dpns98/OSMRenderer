@@ -7,9 +7,9 @@ import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 
 class Polygon(
-    val coords: FloatArray,
+    private val coords: FloatArray,
     private val color: FloatArray
-) {
+) : Geometry(coords, color) {
     private var positionHandle: Int = 0
     private var vPMatrixHandle: Int = 0
     private var mColorHandle: Int = 0
@@ -40,7 +40,7 @@ class Polygon(
         vertexBuffer = null
     }
 
-    fun draw(mvpMatrix: FloatArray, program: Int) {
+    override fun draw(mvpMatrix: FloatArray, program: Int) {
         GLES20.glUseProgram(program)
         positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
         mColorHandle = GLES20.glGetUniformLocation(program, "vColor").also { colorHandle ->
@@ -64,5 +64,9 @@ class Polygon(
             0,
             triangulationVertices.size/2
         )
+    }
+
+    override fun release() {
+        GLES20.glDeleteBuffers(1, buffer, 0)
     }
 }

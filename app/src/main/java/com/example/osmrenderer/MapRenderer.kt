@@ -12,7 +12,11 @@ import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.exp
 
-class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Float) : GLSurfaceView.Renderer {
+class MapRenderer(
+    private val db: DBHelper,
+    private val screenWidth: Float,
+    private val screenHeight: Float
+) : GLSurfaceView.Renderer {
 
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
@@ -33,8 +37,6 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
                 "  gl_FragColor = vColor;" +
                 "}"
 
-    private val RADIUS = 6378137.0
-
     @Volatile
     var positionX: Float = 2279683.5f
     @Volatile
@@ -42,9 +44,7 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
     @Volatile
     var scale: Float = 2000f
     @Volatile
-    var polygons: List<Polygon> = listOf()
-    @Volatile
-    var lines: List<Line> = listOf()
+    var geometries: List<Geometry> = listOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -56,9 +56,6 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
             GLES20.glAttachShader(it, fragmentShader)
             GLES20.glLinkProgram(it)
         }
-
-        //polygons = db.getIdsForKey("building")
-        polygons = db.getIdsForKey("building")
     }
 
     private fun loadShader(type: Int, shaderCode: String): Int {
@@ -78,15 +75,11 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        //GLES20.glDeleteBuffers(1, buffer, 0)
-
-        //getGeometriesForExtent()
-
-        polygons.forEach{
-            it.draw(vPMatrix, mProgram)
+        geometries.forEach {
+            it.release()
         }
-
-        lines.forEach{
+        getGeometriesForExtent()
+        geometries.forEach{
             it.draw(vPMatrix, mProgram)
         }
     }
@@ -98,22 +91,13 @@ class MapRenderer(val db: DBHelper, val screenWidth: Float, val screenHeight: Fl
         Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 100000f)
     }
 
-    fun y2lat(aY: Float): Float {
-        return Math.toDegrees(atan(exp(aY / RADIUS)) * 2 - Math.PI / 2).toFloat()
-    }
-
-    fun x2lon(aX: Float): Float {
-        return Math.toDegrees(aX / RADIUS).toFloat()
-    }
-
     private fun getGeometriesForExtent() {
         val extent = Extent(
-            x2lon(positionX - (screenWidth*scale)),
-            x2lon(positionX + (screenWidth*scale)),
-            y2lat(positionY - (screenHeight*scale)),
-            y2lat(positionY + (screenHeight*scale))
+            positionX - (screenWidth*scale),
+            positionX + (screenWidth*scale),
+            positionY - (screenHeight*scale),
+            positionY + (screenHeight*scale)
         )
-        val triangles = db.getIdsForExtent(extent)
-        //putTrianglesInBuffer(triangles)
+        geometries = db.getIdsForExtent(extent)
     }
 }
