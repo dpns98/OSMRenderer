@@ -73,8 +73,8 @@ class DBHelper(
                 "join way_nodes w on r.way_id = w.way_id " +
                 "join nodes n on w.node_id = n.node_id " +
                 "join way_tags t on t.way_id = w.way_id " +
-                "where min_lon >= ${extent.minX} and max_lon <= ${extent.maxX} " +
-                "and min_lat >= ${extent.minY} and max_lat <= ${extent.maxY}",
+                "where min_lon < ${extent.maxX} and max_lon > ${extent.minX} " +
+                "and min_lat < ${extent.maxY} and max_lat > ${extent.minY}",
             null
         )
 

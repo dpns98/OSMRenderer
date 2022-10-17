@@ -11,8 +11,8 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
 
     private val renderer: MapRenderer
     private val density = (resources.displayMetrics.density * 160)
-    private val screenWidth = (resources.displayMetrics.widthPixels / density) * 0.0254f
-    private val screenHeight = (resources.displayMetrics.heightPixels / density) * 0.0254f
+    private val screenWidth = (resources.displayMetrics.widthPixels / density) * 0.065f
+    private val screenHeight = (resources.displayMetrics.heightPixels / density) * 0.065f
 
     init {
         setEGLContextClientVersion(2)
