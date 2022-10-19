@@ -3,6 +3,7 @@ package com.example.osmrenderer
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
+import kotlinx.coroutines.*
 import kotlin.math.atan
 import kotlin.math.exp
 import kotlin.math.sqrt
@@ -16,9 +17,12 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
 
     init {
         setEGLContextClientVersion(2)
-        renderer = MapRenderer(db, screenWidth, screenHeight)
+        renderer = MapRenderer()
         setRenderer(renderer)
         renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+        GlobalScope.launch(Dispatchers.IO) {
+            getGeometriesForExtent()
+        }
     }
 
     var prevX = 0.0f
@@ -51,14 +55,18 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
                     val d2 = sqrt((x-x1) * (x-x1) + (y-y1) * (y-y1))
                     val ratio = d1/d2
 
-                    if (renderer.scale * ratio > 3f && renderer.scale * ratio < 100000f) {
+                    if (renderer.scale * ratio > 100f && renderer.scale * ratio < 10000f) {
                         renderer.scale *= ratio
                     }
                 }
+                renderer.create = false
                 requestRender()
             }
             MotionEvent.ACTION_UP -> {
                 zooming = false
+                GlobalScope.launch(Dispatchers.IO) {
+                    getGeometriesForExtent()
+                }
             }
         }
 
@@ -69,5 +77,17 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
             prevY1 = y1
         }
         return true
+    }
+
+    private fun getGeometriesForExtent() {
+        val extent = Extent(
+            renderer.positionX - (screenWidth*renderer.scale),
+            renderer.positionX + (screenWidth*renderer.scale),
+            renderer.positionY - (screenHeight*renderer.scale),
+            renderer.positionY + (screenHeight*renderer.scale)
+        )
+        renderer.arrays = db.getIdsForExtent(extent)
+        renderer.create = true
+        requestRender()
     }
 }

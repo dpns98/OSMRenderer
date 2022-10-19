@@ -12,11 +12,7 @@ import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.exp
 
-class MapRenderer(
-    private val db: DBHelper,
-    private val screenWidth: Float,
-    private val screenHeight: Float
-) : GLSurfaceView.Renderer {
+class MapRenderer: GLSurfaceView.Renderer {
 
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
@@ -38,13 +34,16 @@ class MapRenderer(
                 "}"
 
     @Volatile
+    var create = true
+    @Volatile
     var positionX: Float = 2279683.5f
     @Volatile
     var positionY: Float = 5587355.5f
     @Volatile
     var scale: Float = 2000f
     @Volatile
-    var geometries: List<Geometry> = listOf()
+    var arrays = listOf<Pair<FloatArray, String>>()
+    private var geometries: List<Geometry> = listOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -75,10 +74,12 @@ class MapRenderer(
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        geometries.forEach {
-            it.release()
+        if (create) {
+            geometries.forEach {
+                it.release()
+            }
+            geometries = createGeometries()
         }
-        getGeometriesForExtent()
         geometries.forEach{
             it.draw(vPMatrix, mProgram)
         }
@@ -88,16 +89,35 @@ class MapRenderer(
         GLES20.glViewport(0, 0, width, height)
 
         val ratio: Float = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 100000f)
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 10000f)
     }
 
-    private fun getGeometriesForExtent() {
-        val extent = Extent(
-            positionX - (screenWidth*scale),
-            positionX + (screenWidth*scale),
-            positionY - (screenHeight*scale),
-            positionY + (screenHeight*scale)
-        )
-        geometries = db.getIdsForExtent(extent)
+    private fun createGeometries(): List<Geometry> {
+        val newGeometries = mutableListOf<Geometry>()
+        arrays.forEach {
+            newGeometries.add(
+                if (it.second == "highway") {
+                    Line(
+                        it.first,
+                        getTagColor(it.second)
+                    )
+                } else {
+                    Polygon(
+                        it.first,
+                        getTagColor(it.second)
+                    )
+                }
+            )
+        }
+        return newGeometries
+    }
+
+    private fun getTagColor(tag: String): FloatArray {
+        return when(tag) {
+            "building" -> floatArrayOf(1f, 0.76953125f, 0.22265625f, 1.0f)
+            "highway" -> floatArrayOf(0.63671875f, 1f, 0.22265625f, 1.0f)
+            "natural" -> floatArrayOf(0.63671875f, 0.76953125f, 1f, 1.0f)
+            else -> floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+        }
     }
 }

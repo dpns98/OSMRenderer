@@ -18,6 +18,7 @@ class DBHelper(
     private val context: Context
 ) : SQLiteOpenHelper(context, dbName, null, dbVersionNumber) {
 
+    @Volatile
     private var dataBase: SQLiteDatabase? = null
 
     init {
@@ -28,6 +29,7 @@ class DBHelper(
             Log.e("-----", "Database doesn't exist")
             createDatabase()
         }
+        dataBase = SQLiteDatabase.openDatabase(context.getDatabasePath(dbName).path, null, SQLiteDatabase.OPEN_READONLY)
     }
 
     override fun onCreate(db: SQLiteDatabase?) { }
@@ -56,18 +58,7 @@ class DBHelper(
         outputStream.close()
     }
 
-    private fun openDatabase() {
-        dataBase = SQLiteDatabase.openDatabase(context.getDatabasePath(dbName).path, null, SQLiteDatabase.OPEN_READWRITE)
-    }
-
-    override fun close() {
-        dataBase?.close()
-        super.close()
-    }
-
-    fun getIdsForExtent(extent: Extent): List<Geometry>{
-        openDatabase()
-        Log.e("Call ", DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
+    fun getIdsForExtent(extent: Extent): List<Pair<FloatArray, String>>{
         val cursor = dataBase?.rawQuery(
             "select r.way_id, lon, lat, key from rtree_way r " +
                 "join way_nodes w on r.way_id = w.way_id " +
@@ -102,36 +93,6 @@ class DBHelper(
         arrays.add(Pair(coords.toFloatArray(), currentTag))
 
         cursor.close()
-        close()
-
-        Log.e("Query ", DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
-
-        val geometries = mutableListOf<Geometry>()
-        arrays.forEach {
-            geometries.add(
-                if (it.second == "highway") {
-                    Line(
-                        it.first,
-                        getTagColor(it.second)
-                    )
-                } else {
-                    Polygon(
-                        it.first,
-                        getTagColor(it.second)
-                    )
-                }
-            )
-        }
-        Log.e("Ids ", DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
-        return geometries
-    }
-
-    private fun getTagColor(tag: String): FloatArray {
-        return when(tag) {
-            "building" -> floatArrayOf(1f, 0.76953125f, 0.22265625f, 1.0f)
-            "highway" -> floatArrayOf(0.63671875f, 1f, 0.22265625f, 1.0f)
-            "natural" -> floatArrayOf(0.63671875f, 0.76953125f, 1f, 1.0f)
-            else -> floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
-        }
+        return arrays
     }
 }
