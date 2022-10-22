@@ -96,7 +96,7 @@ class MapRenderer: GLSurfaceView.Renderer {
         val newGeometries = mutableListOf<Geometry>()
         arrays.forEach {
             newGeometries.add(
-                if (it.second == "highway") {
+                if (it.second in listOf("highway", "boundary")) {
                     Line(
                         it.first,
                         getTagColor(it.second)
@@ -114,10 +114,12 @@ class MapRenderer: GLSurfaceView.Renderer {
 
     private fun getTagColor(tag: String): FloatArray {
         return when(tag) {
-            "building" -> floatArrayOf(1f, 0.76953125f, 0.22265625f, 1.0f)
-            "highway" -> floatArrayOf(0.63671875f, 1f, 0.22265625f, 1.0f)
-            "natural" -> floatArrayOf(0.63671875f, 0.76953125f, 1f, 1.0f)
-            else -> floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+            "building" -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
+            "highway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
+            "natural" -> floatArrayOf(0.4f, 1f, 0.4f, 1.0f)
+            "landuse" -> floatArrayOf(0f, 0.5f, 1f, 1.0f)
+            "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
+            else -> floatArrayOf(0.6f, 0.7f, 0.2f, 1.0f)
         }
     }
 }

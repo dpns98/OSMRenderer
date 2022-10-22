@@ -58,9 +58,9 @@ class DBHelper(
         outputStream.close()
     }
 
-    fun getIdsForExtent(extent: Extent): List<Pair<FloatArray, String>>{
+    fun getIdsForExtent(extent: Extent, scale: Int): List<Pair<FloatArray, String>>{
         val cursor = dataBase?.rawQuery(
-            "select r.way_id, lon, lat, key from rtree_way r " +
+            "select r.way_id, lon, lat, key from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
                 "join nodes n on w.node_id = n.node_id " +
                 "join way_tags t on t.way_id = w.way_id " +
@@ -91,7 +91,6 @@ class DBHelper(
             coords.add(lat)
         }
         arrays.add(Pair(coords.toFloatArray(), currentTag))
-
         cursor.close()
         return arrays
     }

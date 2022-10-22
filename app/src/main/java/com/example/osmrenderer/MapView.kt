@@ -86,7 +86,7 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
             renderer.positionY - (screenHeight*renderer.scale),
             renderer.positionY + (screenHeight*renderer.scale)
         )
-        renderer.arrays = db.getIdsForExtent(extent)
+        renderer.arrays = db.getIdsForExtent(extent, if (renderer.scale < 3000) 1 else 2)
         renderer.create = true
         requestRender()
     }
