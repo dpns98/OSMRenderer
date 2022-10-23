@@ -58,7 +58,7 @@ class Line(
             0
         )
         GLES20.glDrawArrays(
-            GLES20.GL_LINES,
+            GLES20.GL_LINE_STRIP,
             0,
             coords.size/2
         )

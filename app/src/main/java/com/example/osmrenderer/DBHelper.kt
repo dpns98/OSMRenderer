@@ -60,7 +60,7 @@ class DBHelper(
 
     fun getIdsForExtent(extent: Extent, scale: Int): List<Pair<FloatArray, String>>{
         val cursor = dataBase?.rawQuery(
-            "select r.way_id, lon, lat, key from rtree_way$scale r " +
+            "select r.way_id, lon, lat, key, value from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
                 "join nodes n on w.node_id = n.node_id " +
                 "join way_tags t on t.way_id = w.way_id " +
@@ -79,6 +79,7 @@ class DBHelper(
             val lon = cursor.getFloat(1)
             val lat = cursor.getFloat(2)
             val tag = cursor.getString(3)
+            val value = cursor.getString(4)
 
             if (id != currentId) {
                 if (currentId != -1)
