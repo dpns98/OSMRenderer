@@ -36,9 +36,9 @@ class MapRenderer: GLSurfaceView.Renderer {
     @Volatile
     var create = true
     @Volatile
-    var positionX: Float = 2279683.5f
+    var positionX: Float = 2272360f
     @Volatile
-    var positionY: Float = 5587355.5f
+    var positionY: Float = 5590777f
     @Volatile
     var scale: Float = 2000f
     @Volatile
