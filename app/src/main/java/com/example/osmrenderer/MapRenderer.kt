@@ -42,7 +42,7 @@ class MapRenderer: GLSurfaceView.Renderer {
     @Volatile
     var scale: Float = 2000f
     @Volatile
-    var arrays = listOf<Pair<FloatArray, String>>()
+    var arrays = listOf<Triple<FloatArray, String, IntArray?>>()
     private var geometries: List<Geometry> = listOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
@@ -104,7 +104,8 @@ class MapRenderer: GLSurfaceView.Renderer {
                 } else {
                     Polygon(
                         it.first,
-                        getTagColor(it.second)
+                        getTagColor(it.second),
+                        it.third
                     )
                 }
             )

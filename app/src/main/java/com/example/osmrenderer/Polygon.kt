@@ -8,7 +8,8 @@ import java.nio.ShortBuffer
 
 class Polygon(
     private val coords: FloatArray,
-    private val color: FloatArray
+    private val color: FloatArray,
+    holes: IntArray?
 ) : Geometry(coords, color) {
     private var positionHandle: Int = 0
     private var vPMatrixHandle: Int = 0
@@ -18,7 +19,7 @@ class Polygon(
     private val buffer = IntArray(1)
 
     init {
-        drawOrder = Triangulation.earcut(coords)
+        drawOrder = Triangulation.earcut(coords, holes, 2)
         triangulationVertices = drawOrder
             .flatMap { listOf(coords[it * 2], coords[it * 2 + 1]) }.toFloatArray()
 

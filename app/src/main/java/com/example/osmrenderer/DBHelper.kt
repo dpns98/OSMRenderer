@@ -58,7 +58,7 @@ class DBHelper(
         outputStream.close()
     }
 
-    fun getIdsForExtent(extent: Extent, scale: Int): List<Pair<FloatArray, String>>{
+    fun getIdsForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
         var cursor = dataBase?.rawQuery(
             "select r.way_id, lon, lat, key, value from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
@@ -72,7 +72,7 @@ class DBHelper(
         var currentId = -1
         var currentTag = ""
         val coords = mutableListOf<Float>()
-        val arrays = mutableListOf<Pair<FloatArray, String>>()
+        val arrays = mutableListOf<Triple<FloatArray, String, IntArray?>>()
 
         while (cursor!!.moveToNext()) {
             val id = cursor.getInt(0)
@@ -92,7 +92,7 @@ class DBHelper(
             }
 
             if (id != currentId || cursor.isLast) {
-                arrays.add(Pair(coords.toFloatArray(), currentTag))
+                arrays.add(Triple(coords.toFloatArray(), currentTag, null))
                 currentId = id
                 currentTag = tag
                 coords.clear()
@@ -119,7 +119,7 @@ class DBHelper(
         var currentRole = ""
         val currentCoordsWay = mutableListOf<Pair<Float, Float>>()
         val coordsWay = mutableListOf<Pair<Float, Float>>()
-        val outer = mutableListOf<List<Pair<Float, Float>>>()
+        val outer = mutableListOf<MutableList<Pair<Float, Float>>>()
         val inner = mutableListOf<List<Pair<Float, Float>>>()
 
         while (cursor!!.moveToNext()) {
@@ -157,7 +157,7 @@ class DBHelper(
                     if (currentRole == "inner")
                         inner.add(currentCoordsWay.toList())
                     else
-                        outer.add(currentCoordsWay.toList())
+                        outer.add(currentCoordsWay.toList() as MutableList<Pair<Float, Float>>)
                     currentCoordsWay.clear()
                 }
                 currentWay = way
@@ -166,13 +166,27 @@ class DBHelper(
             }
 
             if (id != currentId || cursor.isLast){
-                if (inner.size == 0 && outer.size > 0) {
-                    outer.forEach {
-                        arrays.add(Pair(
-                            it.flatMap { e -> listOf(e.first, e.second) }.toFloatArray(),
-                            currentTag
-                        ))
+                outer.forEach { out ->
+                    val maxX = out.map { it.first }.max()
+                    val maxY = out.map { it.second }.max()
+                    val minX = out.map { it.first }.min()
+                    val minY = out.map { it.second }.min()
+                    val holes = mutableListOf<Int>()
+                    inner.forEach { inn ->
+                        if (maxX >= inn.map { it.first }.max() &&
+                            maxY >= inn.map { it.second }.max() &&
+                            minX <= inn.map { it.first }.min() &&
+                            minY <= inn.map { it.second }.min()
+                        ) {
+                            holes.add(out.size)
+                            out.addAll(inn)
+                        }
                     }
+                    arrays.add(Triple(
+                        out.flatMap { e -> listOf(e.first, e.second) }.toFloatArray(),
+                        currentTag,
+                        if (holes.isEmpty()) null else holes.toIntArray()
+                    ))
                 }
                 inner.clear()
                 outer.clear()
