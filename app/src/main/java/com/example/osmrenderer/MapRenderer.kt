@@ -46,7 +46,7 @@ class MapRenderer: GLSurfaceView.Renderer {
     private var geometries: List<Geometry> = listOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES20.glClearColor(0.87059f, 0.87059f, 0.87059f, 1.0f)
         val vertexShader: Int = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
         val fragmentShader: Int = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
 
@@ -73,6 +73,7 @@ class MapRenderer: GLSurfaceView.Renderer {
             0f, 1.0f, 0.0f
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+        GLES20.glLineWidth(20000/scale)
 
         if (create) {
             geometries.forEach {
@@ -115,11 +116,17 @@ class MapRenderer: GLSurfaceView.Renderer {
 
     private fun getTagColor(tag: String): FloatArray {
         return when(tag) {
+            "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
             "building" -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
             "highway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
-            "natural" -> floatArrayOf(0.4f, 1f, 0.4f, 1.0f)
-            "landuse" -> floatArrayOf(0f, 0.5f, 1f, 1.0f)
-            "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
+            in listOf("cemetery", "natural", "forest") -> floatArrayOf(0.0f, 0.6f, 0.0f, 1.0f)
+            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> floatArrayOf(0.22353f, 0.67451f, 0.45098f, 1.0f)
+            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> floatArrayOf(0.43922f, 0.85882f, 0.43922f, 1.0f)
+            in listOf("beach", "sand") -> floatArrayOf(1.00000f, 1.00000f, 0.70196f, 1.0f)
+            "water" -> floatArrayOf(0.30196f, 0.65098f, 1.00000f, 1.0f)
+            in listOf("commercial", "residential", "retail") -> floatArrayOf(0.92549f, 0.92549f, 0.79608f, 1.0f)
+            in listOf("industrial", "garages", "construction") -> floatArrayOf(0.80000f, 0.78039f, 0.83922f, 1.0f)
+            "landuse" -> floatArrayOf(0.87059f, 0.87059f, 0.87059f, 1.0f)
             else -> floatArrayOf(0.6f, 0.7f, 0.2f, 1.0f)
         }
     }

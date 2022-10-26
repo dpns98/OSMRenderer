@@ -20,6 +20,9 @@ class DBHelper(
 
     @Volatile
     private var dataBase: SQLiteDatabase? = null
+    private val valueTags = listOf("water", "sand", "beach", "cemetery", "commercial",
+        "residential", "retail", "farmland", "industrial", "forest", "meadow", "flowerbed",
+        "grass", "orchard", "garages", "construction", "recreation_ground", "pitch", "track")
 
     init {
         val dbExist = checkDatabase()
@@ -78,8 +81,11 @@ class DBHelper(
             val id = cursor.getInt(0)
             val lon = cursor.getFloat(1)
             val lat = cursor.getFloat(2)
-            val tag = cursor.getString(3)
+            var tag = cursor.getString(3)
             val value = cursor.getString(4)
+
+            if (value in valueTags && tag != "highway")
+                tag = value
 
             if (cursor.isFirst) {
                 currentId = id
@@ -126,10 +132,13 @@ class DBHelper(
             val id = cursor.getInt(0)
             val lon = cursor.getFloat(1)
             val lat = cursor.getFloat(2)
-            val tag = cursor.getString(3)
+            var tag = cursor.getString(3)
             val value = cursor.getString(4)
             val role = cursor.getString(5)
             val way = cursor.getInt(6)
+
+            if (value in valueTags)
+                tag = value
 
             if (cursor.isFirst) {
                 currentRole = role
