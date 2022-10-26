@@ -82,7 +82,13 @@ class MapRenderer: GLSurfaceView.Renderer {
             geometries = createGeometries()
         }
         geometries.forEach{
-            it.draw(vPMatrix, mProgram)
+            if (it.isPath()){
+                GLES20.glLineWidth(8000/scale)
+                it.draw(vPMatrix, mProgram)
+                GLES20.glLineWidth(20000/scale)
+            }
+            else
+                it.draw(vPMatrix, mProgram)
         }
     }
 
@@ -97,7 +103,7 @@ class MapRenderer: GLSurfaceView.Renderer {
         val newGeometries = mutableListOf<Geometry>()
         arrays.forEach {
             newGeometries.add(
-                if (it.second in listOf("highway", "boundary")) {
+                if (it.second in listOf("highway", "boundary", "path")) {
                     Line(
                         it.first,
                         getTagColor(it.second)
@@ -119,15 +125,16 @@ class MapRenderer: GLSurfaceView.Renderer {
             "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
             "building" -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
             "highway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
+            "path" -> floatArrayOf(0.96078f, 0.54118f, 0.67843f, 1.0f)
+            in listOf("beach", "sand") -> floatArrayOf(1.00000f, 1.00000f, 0.70196f, 1.0f)
+            "water" -> floatArrayOf(0.30196f, 0.65098f, 1.00000f, 1.0f)
             in listOf("cemetery", "natural", "forest") -> floatArrayOf(0.0f, 0.6f, 0.0f, 1.0f)
             in listOf("farmland", "meadow", "orchard", "pitch", "track") -> floatArrayOf(0.22353f, 0.67451f, 0.45098f, 1.0f)
             in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> floatArrayOf(0.43922f, 0.85882f, 0.43922f, 1.0f)
-            in listOf("beach", "sand") -> floatArrayOf(1.00000f, 1.00000f, 0.70196f, 1.0f)
-            "water" -> floatArrayOf(0.30196f, 0.65098f, 1.00000f, 1.0f)
             in listOf("commercial", "residential", "retail") -> floatArrayOf(0.92549f, 0.92549f, 0.79608f, 1.0f)
             in listOf("industrial", "garages", "construction") -> floatArrayOf(0.80000f, 0.78039f, 0.83922f, 1.0f)
             "landuse" -> floatArrayOf(0.87059f, 0.87059f, 0.87059f, 1.0f)
-            else -> floatArrayOf(0.6f, 0.7f, 0.2f, 1.0f)
+            else -> floatArrayOf(0.87059f, 0.87059f, 0.87059f, 1.0f)
         }
     }
 }

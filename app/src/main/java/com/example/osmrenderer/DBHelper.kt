@@ -87,6 +87,12 @@ class DBHelper(
             if (value in valueTags && tag != "highway")
                 tag = value
 
+            if (value in listOf("footway", "bridleway", "steps", "path", "corridor", "cycleway"))
+                tag = "path"
+
+            if (value == "proposed")
+                continue
+
             if (cursor.isFirst) {
                 currentId = id
                 currentTag = tag
@@ -208,6 +214,25 @@ class DBHelper(
         }
 
         cursor.close()
+        arrays.sortBy { -tagSort(it.second) }
         return arrays
+    }
+
+    fun tagSort(tag: String): Int{
+        return when(tag){
+            "boundary" -> 1
+            "building" -> 2
+            "highway" -> 3
+            "path" -> 4
+            in listOf("beach", "sand") -> 5
+            "water" -> 6
+            in listOf("cemetery", "natural", "forest") -> 7
+            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> 8
+            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> 9
+            in listOf("commercial", "residential", "retail") -> 10
+            in listOf("industrial", "garages", "construction") -> 11
+            "landuse" -> 12
+            else -> 12
+        }
     }
 }
