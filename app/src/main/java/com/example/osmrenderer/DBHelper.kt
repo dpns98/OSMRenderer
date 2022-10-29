@@ -20,7 +20,7 @@ class DBHelper(
 
     @Volatile
     private var dataBase: SQLiteDatabase? = null
-    private val valueTags = listOf("water", "sand", "beach", "cemetery", "commercial",
+    private val valueTags = listOf("water", "sand", "beach", "cemetery", "commercial", "bridge",
         "residential", "retail", "farmland", "industrial", "forest", "meadow", "flowerbed",
         "grass", "orchard", "garages", "construction", "recreation_ground", "pitch", "track")
 
@@ -104,7 +104,9 @@ class DBHelper(
             }
 
             if (id != currentId || cursor.isLast) {
-                arrays.add(Triple(coords.toFloatArray(), currentTag, null))
+                if (currentTag != "man_made" ||
+                    (coords[0] == coords[coords.size-2] && coords[1] == coords[coords.lastIndex]))
+                    arrays.add(Triple(coords.toFloatArray(), currentTag, null))
                 currentId = id
                 currentTag = tag
                 coords.clear()
@@ -218,21 +220,22 @@ class DBHelper(
         return arrays
     }
 
-    fun tagSort(tag: String): Int{
+    private fun tagSort(tag: String): Int{
         return when(tag){
             "boundary" -> 1
-            "building" -> 2
+            in listOf("building", "man_made") -> 2
             "highway" -> 3
             "path" -> 4
-            in listOf("beach", "sand") -> 5
-            "water" -> 6
-            in listOf("cemetery", "natural", "forest") -> 7
-            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> 8
-            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> 9
-            in listOf("commercial", "residential", "retail") -> 10
-            in listOf("industrial", "garages", "construction") -> 11
-            "landuse" -> 12
-            else -> 12
+            "bridge" -> 5
+            in listOf("beach", "sand") -> 6
+            "water" -> 7
+            in listOf("cemetery", "natural", "forest") -> 8
+            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> 9
+            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> 10
+            in listOf("commercial", "residential", "retail") -> 11
+            in listOf("industrial", "garages", "construction") -> 12
+            "landuse" -> 13
+            else -> 14
         }
     }
 }

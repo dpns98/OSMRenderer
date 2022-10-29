@@ -123,7 +123,7 @@ class MapRenderer: GLSurfaceView.Renderer {
     private fun getTagColor(tag: String): FloatArray {
         return when(tag) {
             "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
-            "building" -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
+            in listOf("building", "man_made") -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
             "highway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
             "path" -> floatArrayOf(0.96078f, 0.54118f, 0.67843f, 1.0f)
             in listOf("beach", "sand") -> floatArrayOf(1.00000f, 1.00000f, 0.70196f, 1.0f)
