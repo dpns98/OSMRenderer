@@ -3,9 +3,12 @@ package com.example.osmrenderer
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
@@ -73,7 +76,7 @@ class MapRenderer: GLSurfaceView.Renderer {
             0f, 1.0f, 0.0f
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        GLES20.glLineWidth(20000/scale)
+        GLES20.glLineWidth(60000/scale)
 
         if (create) {
             geometries.forEach {
@@ -85,7 +88,7 @@ class MapRenderer: GLSurfaceView.Renderer {
             if (it.isPath()){
                 GLES20.glLineWidth(8000/scale)
                 it.draw(vPMatrix, mProgram)
-                GLES20.glLineWidth(20000/scale)
+                GLES20.glLineWidth(60000/scale)
             }
             else
                 it.draw(vPMatrix, mProgram)
@@ -103,7 +106,7 @@ class MapRenderer: GLSurfaceView.Renderer {
         val newGeometries = mutableListOf<Geometry>()
         arrays.forEach {
             newGeometries.add(
-                if (it.second in listOf("highway", "boundary", "path")) {
+                if (it.second in listOf("highway", "boundary", "path", "way", "motorway", "street")) {
                     Line(
                         it.first,
                         getTagColor(it.second)
@@ -117,6 +120,8 @@ class MapRenderer: GLSurfaceView.Renderer {
                 }
             )
         }
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+        Log.e("create", sdf.format(Date()))
         return newGeometries
     }
 
@@ -124,7 +129,10 @@ class MapRenderer: GLSurfaceView.Renderer {
         return when(tag) {
             "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
             in listOf("building", "man_made") -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
-            "highway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
+            "motorway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
+            "street" -> floatArrayOf(1.00000f, 0.94902f, 0.40000f, 1.0f)
+            "highway" -> floatArrayOf(1f, 1f, 1f, 1.0f)
+            "way" -> floatArrayOf(0.96078f, 0.54118f, 0.67843f, 1.0f)
             "path" -> floatArrayOf(0.96078f, 0.54118f, 0.67843f, 1.0f)
             in listOf("beach", "sand") -> floatArrayOf(1.00000f, 1.00000f, 0.70196f, 1.0f)
             "water" -> floatArrayOf(0.30196f, 0.65098f, 1.00000f, 1.0f)

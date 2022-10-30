@@ -6,8 +6,10 @@ import org.sqlite.database.sqlite.SQLiteDatabase
 import org.sqlite.database.sqlite.SQLiteOpenHelper
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.*
 import kotlin.math.ln
 import kotlin.math.tan
 
@@ -20,9 +22,11 @@ class DBHelper(
 
     @Volatile
     private var dataBase: SQLiteDatabase? = null
-    private val valueTags = listOf("water", "sand", "beach", "cemetery", "commercial", "bridge",
+    private val valueTags = listOf(
+        "water", "sand", "beach", "cemetery", "commercial", "bridge",
         "residential", "retail", "farmland", "industrial", "forest", "meadow", "flowerbed",
-        "grass", "orchard", "garages", "construction", "recreation_ground", "pitch", "track")
+        "grass", "orchard", "garages", "construction", "recreation_ground", "pitch", "track",
+    )
 
     init {
         val dbExist = checkDatabase()
@@ -62,6 +66,8 @@ class DBHelper(
     }
 
     fun getIdsForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+        Log.e("call", sdf.format(Date()))
         var cursor = dataBase?.rawQuery(
             "select r.way_id, lon, lat, key, value from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
@@ -90,7 +96,16 @@ class DBHelper(
             if (value in listOf("footway", "bridleway", "steps", "path", "corridor", "cycleway"))
                 tag = "path"
 
-            if (value == "proposed")
+            if (tag == "highway" && value in listOf("pedestrian", "service", "track"))
+                tag = "way"
+
+            if (tag == "highway" && value in listOf("motorway", "motorway_link"))
+                tag = "motorway"
+
+            if (tag == "highway" && value in listOf("primary", "primary_link", "secondary", "secondary_link"))
+                tag = "street"
+
+            if (value in listOf("proposed", "construction", "elevator"))
                 continue
 
             if (cursor.isFirst) {
@@ -104,8 +119,9 @@ class DBHelper(
             }
 
             if (id != currentId || cursor.isLast) {
-                if (currentTag != "man_made" ||
-                    (coords[0] == coords[coords.size-2] && coords[1] == coords[coords.lastIndex]))
+                if ((currentTag != "man_made" || isPolygon(coords)) &&
+                    (currentTag != "way" || !isPolygon(coords)) &&
+                    (scale != 2 || currentTag !in listOf("building", "man_made")))
                     arrays.add(Triple(coords.toFloatArray(), currentTag, null))
                 currentId = id
                 currentTag = tag
@@ -116,8 +132,10 @@ class DBHelper(
         }
         cursor.close()
 
+        Log.e("query1", sdf.format(Date()))
+
         cursor = dataBase?.rawQuery(
-            "select r.relation_id, lon, lat, key, value, role, w.way_id from rtree_relation r " +
+            "select r.relation_id, lon, lat, key, value, role, w.way_id from rtree_relation$scale r " +
                 "join relation_members m on m.relation_id = r.relation_id " +
                 "join way_nodes w on m.ref = w.way_id " +
                 "join nodes n on w.node_id = n.node_id " +
@@ -199,11 +217,15 @@ class DBHelper(
                             out.addAll(inn)
                         }
                     }
-                    arrays.add(Triple(
-                        out.flatMap { e -> listOf(e.first, e.second) }.toFloatArray(),
-                        currentTag,
-                        if (holes.isEmpty()) null else holes.toIntArray()
-                    ))
+                    if (scale != 2 || currentTag !in listOf("building", "man_made")) {
+                        arrays.add(
+                            Triple(
+                                out.flatMap { e -> listOf(e.first, e.second) }.toFloatArray(),
+                                currentTag,
+                                if (holes.isEmpty()) null else holes.toIntArray()
+                            )
+                        )
+                    }
                 }
                 inner.clear()
                 outer.clear()
@@ -215,27 +237,38 @@ class DBHelper(
             coordsWay.add(Pair(lon, lat))
         }
 
+
+        Log.e("query2", sdf.format(Date()))
+
         cursor.close()
-        arrays.sortBy { -tagSort(it.second) }
+        arrays.sortBy { tagSort(it.second) }
+        Log.e("sort", sdf.format(Date()))
         return arrays
+    }
+
+    private fun isPolygon(coords: List<Float>): Boolean {
+        return coords[0] == coords[coords.size-2] && coords[1] == coords[coords.lastIndex]
     }
 
     private fun tagSort(tag: String): Int{
         return when(tag){
-            "boundary" -> 1
-            in listOf("building", "man_made") -> 2
-            "highway" -> 3
-            "path" -> 4
-            "bridge" -> 5
-            in listOf("beach", "sand") -> 6
-            "water" -> 7
-            in listOf("cemetery", "natural", "forest") -> 8
-            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> 9
-            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> 10
-            in listOf("commercial", "residential", "retail") -> 11
-            in listOf("industrial", "garages", "construction") -> 12
-            "landuse" -> 13
-            else -> 14
+            "boundary" -> 17
+            in listOf("building", "man_made") -> 16
+            "motorway" -> 15
+            "street" -> 14
+            "highway" -> 13
+            "way" -> 12
+            "path" -> 11
+            "bridge" -> 10
+            in listOf("beach", "sand") -> 9
+            "water" -> 8
+            in listOf("cemetery", "natural", "forest") -> 7
+            in listOf("farmland", "meadow", "orchard", "pitch", "track") -> 6
+            in listOf("leisure", "flowerbed", "grass", "recreation_ground") -> 5
+            in listOf("commercial", "residential", "retail") -> 4
+            in listOf("industrial", "garages", "construction") -> 3
+            "landuse" -> 2
+            else -> 1
         }
     }
 }
