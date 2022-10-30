@@ -110,7 +110,7 @@ def add_rtree_ways():
     FROM way_nodes
     LEFT JOIN nodes ON way_nodes.node_id=nodes.node_id
     JOIN way_tags ON way_tags.way_id=way_nodes.way_id
-	WHERE way_tags.key IN ('building', 'highway', 'landuse', 'natural', 'boundary', 'leisure', 'man_made')
+	WHERE key IN ('building', 'highway', 'landuse', 'natural', 'boundary', 'leisure', 'man_made')
     GROUP BY way_nodes.way_id
     ''')
     db.execute('CREATE VIRTUAL TABLE rtree_way2 USING rtree(way_id, min_lat, max_lat, min_lon, max_lon)')
@@ -120,17 +120,28 @@ def add_rtree_ways():
     FROM way_nodes
     LEFT JOIN nodes ON way_nodes.node_id=nodes.node_id
 	JOIN way_tags ON way_tags.way_id=way_nodes.way_id
-	WHERE way_tags.key IN ('highway', 'landuse', 'natural', 'boundary', 'leisure', 'man_made') and way_tags.value not in ('footway', 'bridleway', 'steps', 'path', 'corridor', 'cycleway')
+	WHERE key IN ('highway', 'landuse', 'natural', 'boundary', 'leisure') 
+    and value not in ('footway', 'bridleway', 'steps', 'path', 'corridor', 'cycleway', 'pedestrian', 'service', 'track') or value = 'bridge'
     GROUP BY way_nodes.way_id
     ''')
-    db.execute('CREATE VIRTUAL TABLE rtree_relation USING rtree(relation_id, min_lat, max_lat, min_lon, max_lon)')
+    db.execute('CREATE VIRTUAL TABLE rtree_relation1 USING rtree(relation_id, min_lat, max_lat, min_lon, max_lon)')
     db.execute('''
-    INSERT INTO rtree_relation (relation_id, min_lat, max_lat, min_lon, max_lon)
+    INSERT INTO rtree_relation1 (relation_id, min_lat, max_lat, min_lon, max_lon)
     SELECT relation_members.relation_id, min(bb.min_lat), max(bb.max_lat), min(bb.min_lon), max(bb.max_lon) FROM relation_members JOIN
     (SELECT way_nodes.way_id as way_id,min(nodes.lat) as min_lat,max(nodes.lat) as max_lat,min(nodes.lon) as min_lon,max(nodes.lon) as max_lon
     FROM way_nodes LEFT JOIN nodes ON way_nodes.node_id=nodes.node_id GROUP BY way_nodes.way_id) bb on bb.way_id = ref 
     JOIN relation_tags on relation_tags.relation_id = relation_members.relation_id
     WHERE key in ('building', 'landuse', 'natural', 'leisure', 'man_made')
+    GROUP BY relation_members.relation_id
+    ''')
+    db.execute('CREATE VIRTUAL TABLE rtree_relation2 USING rtree(relation_id, min_lat, max_lat, min_lon, max_lon)')
+    db.execute('''
+    INSERT INTO rtree_relation2 (relation_id, min_lat, max_lat, min_lon, max_lon)
+    SELECT relation_members.relation_id, min(bb.min_lat), max(bb.max_lat), min(bb.min_lon), max(bb.max_lon) FROM relation_members JOIN
+    (SELECT way_nodes.way_id as way_id,min(nodes.lat) as min_lat,max(nodes.lat) as max_lat,min(nodes.lon) as min_lon,max(nodes.lon) as max_lon
+    FROM way_nodes LEFT JOIN nodes ON way_nodes.node_id=nodes.node_id GROUP BY way_nodes.way_id) bb on bb.way_id = ref 
+    JOIN relation_tags on relation_tags.relation_id = relation_members.relation_id
+    WHERE key in ('landuse', 'natural', 'leisure') or value = 'bridge'
     GROUP BY relation_members.relation_id
     ''')
     db_connect.commit()
