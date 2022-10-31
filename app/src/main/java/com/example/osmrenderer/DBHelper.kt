@@ -236,13 +236,9 @@ class DBHelper(
 
             coordsWay.add(Pair(lon, lat))
         }
-
-
         Log.e("query2", sdf.format(Date()))
-
         cursor.close()
         arrays.sortBy { tagSort(it.second) }
-        Log.e("sort", sdf.format(Date()))
         return arrays
     }
 

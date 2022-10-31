@@ -15,7 +15,7 @@ import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.exp
 
-class MapRenderer: GLSurfaceView.Renderer {
+class MapRenderer(val screenWidth: Float, val screenHeight: Float) : GLSurfaceView.Renderer {
 
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
@@ -43,7 +43,7 @@ class MapRenderer: GLSurfaceView.Renderer {
     @Volatile
     var positionY: Float = 5590777f
     @Volatile
-    var scale: Float = 2000f
+    var scale: Float = 8000f
     @Volatile
     var arrays = listOf<Triple<FloatArray, String, IntArray?>>()
     private var geometries: List<Geometry> = listOf()
@@ -71,24 +71,26 @@ class MapRenderer: GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         Matrix.setLookAtM(
             viewMatrix, 0,
-            positionX, positionY,scale,
+            positionX, positionY, scale,
             positionX, positionY, 0f,
             0f, 1.0f, 0.0f
         )
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-        GLES20.glLineWidth(60000/scale)
+        GLES20.glLineWidth(100000/scale)
 
         if (create) {
             geometries.forEach {
                 it.release()
             }
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+            Log.e("delete", sdf.format(Date()))
             geometries = createGeometries()
         }
         geometries.forEach{
             if (it.isPath()){
-                GLES20.glLineWidth(8000/scale)
+                GLES20.glLineWidth(10000/scale)
                 it.draw(vPMatrix, mProgram)
-                GLES20.glLineWidth(60000/scale)
+                GLES20.glLineWidth(100000/scale)
             }
             else
                 it.draw(vPMatrix, mProgram)
@@ -97,9 +99,11 @@ class MapRenderer: GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
-
-        val ratio: Float = width.toFloat() / height.toFloat()
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 10000f)
+        Matrix.frustumM(
+            projectionMatrix, 0,
+            -screenWidth, screenWidth, -screenHeight, screenHeight,
+            1f, 20000f
+        )
     }
 
     private fun createGeometries(): List<Geometry> {
