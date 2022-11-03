@@ -70,7 +70,9 @@ class DBHelper(
         return Pair((cursor.getFloat(0)+cursor.getFloat(1))/2, (cursor.getFloat(2)+cursor.getFloat(3))/2)
     }
 
-    fun getIdsForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
+    //returns triple of coordinates, tag name and indices of hole coordinates if they exist
+    fun getGeometriesForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
+        //query rtree on current scale for polygons and lines
         var cursor = dataBase?.rawQuery(
             "select r.way_id, lon, lat, key, value from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
@@ -134,7 +136,7 @@ class DBHelper(
             coords.add(lat)
         }
         cursor.close()
-
+        //query rtree on current scale for multipolygons
         cursor = dataBase?.rawQuery(
             "select r.relation_id, lon, lat, key, value, role, w.way_id from rtree_relation$scale r " +
                 "join relation_members m on m.relation_id = r.relation_id " +
@@ -178,6 +180,7 @@ class DBHelper(
                 coordsWay.add(Pair(lon, lat))
 
             if ((way != currentWay && id == currentId) || id != currentId || cursor.isLast) {
+                //append coordinates on existing coordinates
                 if (currentCoordsWay.isEmpty())
                     currentCoordsWay.addAll(coordsWay)
                 else if (currentCoordsWay.last() == coordsWay.first())
@@ -188,7 +191,7 @@ class DBHelper(
                     currentCoordsWay.addAll(0, coordsWay.reversed().subList(0, coordsWay.lastIndex))
                 else if (currentCoordsWay.first() == coordsWay.last())
                     currentCoordsWay.addAll(0, coordsWay.subList(0, coordsWay.lastIndex))
-
+                //check for loop
                 if (currentCoordsWay.first() == currentCoordsWay.last()){
                     if (currentRole == "inner")
                         inner.add(currentCoordsWay.toList())
@@ -203,6 +206,7 @@ class DBHelper(
 
             if (id != currentId || cursor.isLast){
                 outer.forEach { out ->
+                    //for each outer polygon find appropriate inner polygons
                     val maxX = out.map { it.first }.max()
                     val maxY = out.map { it.second }.max()
                     val minX = out.map { it.first }.min()

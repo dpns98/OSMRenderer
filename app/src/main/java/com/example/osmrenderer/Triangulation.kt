@@ -1,6 +1,6 @@
 package com.example.osmrenderer
 
-
+//from https://github.com/earcut4j/earcut4j
 object Triangulation {
     /**
      * Triangulates the given polygon

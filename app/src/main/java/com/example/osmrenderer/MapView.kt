@@ -12,13 +12,16 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
     private val renderer: MapRenderer
     private val metrics = resources.displayMetrics
     private var pixels2meters = 0.0f
+    //half width and half height of screen
     private var screenWidth = metrics.widthPixels.toFloat() / 2f
     private var screenHeight = metrics.heightPixels.toFloat() / 2f
 
     init {
         setEGLContextClientVersion(2)
         val initialPosition = db.getInitialPosition()
+        //distortion from cylindrical projection https://en.wikipedia.org/wiki/Mercator_projection#Scale_factor
         val distortion = cos(Math.toRadians(initialPosition.first.toDouble()))
+        //converting pixels to meters by dividing with pixel density per inch and distortion and multiplying with number of meters in inch
         pixels2meters = 0.0254f / (metrics.xdpi * distortion).toFloat()
         screenHeight *= pixels2meters
         screenWidth *= pixels2meters
@@ -37,6 +40,7 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
         }
     }
 
+    //previous touch pixel coordinates
     var prevX = 0.0f
     var prevY = 0.0f
     var prevX1 = 0.0f
@@ -45,24 +49,29 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
 
+        //touch pixel coordinates
         val x = e.getX(0)
         val y = e.getY(0)
         var x1 = 0f
         var y1 = 0f
+        //touch with 2 fingers
         if (e.pointerCount > 1) {
             x1 = e.getX(1)
             y1 = e.getY(1)
         }
 
         when (e.action and MotionEvent.ACTION_MASK) {
+            //2 fingers
             MotionEvent.ACTION_POINTER_DOWN -> {
                 zooming = true
             }
             MotionEvent.ACTION_MOVE -> {
                 if (!zooming) {
+                    //translate camera
                     renderer.positionX += (prevX - x) * renderer.scale * pixels2meters
                     renderer.positionY += (y - prevY) * renderer.scale * pixels2meters
                 } else if (e.pointerCount > 1) {
+                    //scale and translate camera around midpoint between 2 finger pixel coordinates
                     val d1 = sqrt((prevX-prevX1) * (prevX-prevX1) + (prevY-prevY1) * (prevY-prevY1))
                     val d2 = sqrt((x-x1) * (x-x1) + (y-y1) * (y-y1))
                     val ratio = d1/d2
@@ -81,6 +90,7 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
             }
             MotionEvent.ACTION_UP -> {
                 zooming = false
+                //on finger up query db
                 GlobalScope.launch(Dispatchers.IO) {
                     getGeometriesForExtent()
                 }
@@ -97,13 +107,14 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
     }
 
     private fun getGeometriesForExtent() {
+        //get data for screen bounding box
         val extent = Extent(
             renderer.positionX - (screenWidth*renderer.scale),
             renderer.positionX + (screenWidth*renderer.scale),
             renderer.positionY - (screenHeight*renderer.scale),
             renderer.positionY + (screenHeight*renderer.scale)
         )
-        renderer.arrays = db.getIdsForExtent(extent, if (renderer.scale <= 8000) 1 else 2)
+        renderer.arrays = db.getGeometriesForExtent(extent, if (renderer.scale <= 8000) 1 else 2)
         renderer.create = true
         requestRender()
     }

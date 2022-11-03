@@ -105,6 +105,7 @@ class MapRenderer(
 
     private fun createGeometries(): List<Geometry> {
         val newGeometries = mutableListOf<Geometry>()
+        //array of triples of coordinates, tags, and hole indices
         arrays.forEach {
             newGeometries.add(
                 if (it.second in listOf("highway", "boundary", "path", "way", "motorway", "street")) {
