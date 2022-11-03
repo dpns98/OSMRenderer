@@ -15,7 +15,10 @@ import kotlin.math.abs
 import kotlin.math.atan
 import kotlin.math.exp
 
-class MapRenderer(val screenWidth: Float, val screenHeight: Float) : GLSurfaceView.Renderer {
+class MapRenderer(
+    private val screenWidth: Float,
+    private val screenHeight: Float
+) : GLSurfaceView.Renderer {
 
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
@@ -57,6 +60,9 @@ class MapRenderer(val screenWidth: Float, val screenHeight: Float) : GLSurfaceVi
             GLES20.glAttachShader(it, vertexShader)
             GLES20.glAttachShader(it, fragmentShader)
             GLES20.glLinkProgram(it)
+            GLES20.glUseProgram(it)
+            GLES20.glDeleteShader(vertexShader)
+            GLES20.glDeleteShader(fragmentShader)
         }
     }
 

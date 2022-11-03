@@ -39,7 +39,6 @@ class Line(
     }
 
     override fun draw(mvpMatrix: FloatArray, program: Int) {
-        GLES20.glUseProgram(program)
         positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
         mColorHandle = GLES20.glGetUniformLocation(program, "vColor").also { colorHandle ->
             GLES20.glUniform4fv(colorHandle, 1, color, 0)
@@ -48,20 +47,14 @@ class Line(
         GLES20.glUniformMatrix4fv(vPMatrixHandle, 1, false, mvpMatrix, 0)
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
+        GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, 0)
         GLES20.glEnableVertexAttribArray(positionHandle)
-        GLES20.glVertexAttribPointer(
-            positionHandle,
-            2,
-            GLES20.GL_FLOAT,
-            false,
-            0,
-            0
-        )
         GLES20.glDrawArrays(
             GLES20.GL_LINE_STRIP,
             0,
             coords.size/2
         )
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
     }
 
     override fun release() {
