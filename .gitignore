@@ -13,4 +13,3 @@
 .externalNativeBuild
 .cxx
 local.properties
-**/SQLITE_DB
