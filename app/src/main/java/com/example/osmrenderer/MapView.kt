@@ -47,6 +47,7 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
             }
             MotionEvent.ACTION_MOVE -> {
                 if (!zooming) {
+                    
                     renderer.positionX += ((prevX - x)/metrics.xdpi) * renderer.scale * 0.0254f * 1.4f
                     renderer.positionY += ((y - prevY)/metrics.ydpi) * renderer.scale * 0.0254f * 1.4f
                 } else if (e.pointerCount > 1) {
@@ -54,8 +55,13 @@ class MapView(context: Context, val db: DBHelper) : GLSurfaceView(context) {
                     val d2 = sqrt((x-x1) * (x-x1) + (y-y1) * (y-y1))
                     val ratio = d1/d2
 
+                    val xOffset = ((metrics.widthPixels/2 - (x+x1)/2)/metrics.xdpi) * 0.0254f * 1.4f * renderer.scale*(1-ratio)
+                    val yOffset = ((metrics.heightPixels/2 - (y+y1)/2)/metrics.ydpi) * 0.0254f * 1.4f * renderer.scale*(1-ratio)
+
                     if (renderer.scale * ratio > 1000f && renderer.scale * ratio < 20000f) {
                         renderer.scale *= ratio
+                        renderer.positionX -= xOffset
+                        renderer.positionY += yOffset
                     }
                 }
                 renderer.create = false
