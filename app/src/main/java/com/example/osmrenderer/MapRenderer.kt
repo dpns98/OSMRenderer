@@ -3,21 +3,14 @@ package com.example.osmrenderer
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
-import android.util.Log
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.FloatBuffer
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.abs
-import kotlin.math.atan
-import kotlin.math.exp
 
 class MapRenderer(
     private val screenWidth: Float,
-    private val screenHeight: Float
+    private val screenHeight: Float,
+    private val initialX: Float,
+    private val initialY: Float
 ) : GLSurfaceView.Renderer {
 
     private val vPMatrix = FloatArray(16)
@@ -27,24 +20,24 @@ class MapRenderer(
     private var mProgram: Int = 0
     private val vertexShaderCode =
         "uniform mat4 uMVPMatrix;" +
-                "attribute vec4 vPosition;" +
-                "void main() {" +
-                "  gl_Position = uMVPMatrix * vPosition;" +
-                "}"
+        "attribute vec4 vPosition;" +
+        "void main() {" +
+        "  gl_Position = uMVPMatrix * vPosition;" +
+        "}"
 
     private val fragmentShaderCode =
         "precision mediump float;" +
-                "uniform vec4 vColor;" +
-                "void main() {" +
-                "  gl_FragColor = vColor;" +
-                "}"
+        "uniform vec4 vColor;" +
+        "void main() {" +
+        "  gl_FragColor = vColor;" +
+        "}"
 
     @Volatile
     var create = true
     @Volatile
-    var positionX: Float = 2272360f
+    var positionX: Float = initialX
     @Volatile
-    var positionY: Float = 5590777f
+    var positionY: Float = initialY
     @Volatile
     var scale: Float = 8000f
     @Volatile
@@ -88,8 +81,6 @@ class MapRenderer(
             geometries.forEach {
                 it.release()
             }
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
-            Log.e("delete", sdf.format(Date()))
             geometries = createGeometries()
         }
         geometries.forEach{
@@ -130,8 +121,6 @@ class MapRenderer(
                 }
             )
         }
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
-        Log.e("create", sdf.format(Date()))
         return newGeometries
     }
 

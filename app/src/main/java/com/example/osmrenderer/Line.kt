@@ -49,11 +49,7 @@ class Line(
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffer[0])
         GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, 0)
         GLES20.glEnableVertexAttribArray(positionHandle)
-        GLES20.glDrawArrays(
-            GLES20.GL_LINE_STRIP,
-            0,
-            coords.size/2
-        )
+        GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, coords.size/2)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
     }
 

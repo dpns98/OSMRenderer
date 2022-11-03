@@ -6,12 +6,6 @@ import org.sqlite.database.sqlite.SQLiteDatabase
 import org.sqlite.database.sqlite.SQLiteOpenHelper
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.util.*
-import kotlin.math.ln
-import kotlin.math.tan
 
 const val dbName = "SQLITE_DB"
 const val dbVersionNumber = 1
@@ -65,9 +59,18 @@ class DBHelper(
         outputStream.close()
     }
 
+    fun getInitialPosition(): Pair<Float, Float> {
+        val cursor = dataBase?.rawQuery(
+            "select min(lon), max(lon), min(lat), max(lat) " +
+                "from nodes n join way_nodes wn on n.node_id = wn.node_id " +
+                "join way_tags wt on wt.way_id = wn.way_id where key = 'building'",
+            null
+        )
+        cursor!!.moveToNext()
+        return Pair((cursor.getFloat(0)+cursor.getFloat(1))/2, (cursor.getFloat(2)+cursor.getFloat(3))/2)
+    }
+
     fun getIdsForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
-        Log.e("call", sdf.format(Date()))
         var cursor = dataBase?.rawQuery(
             "select r.way_id, lon, lat, key, value from rtree_way$scale r " +
                 "join way_nodes w on r.way_id = w.way_id " +
@@ -131,8 +134,6 @@ class DBHelper(
             coords.add(lat)
         }
         cursor.close()
-
-        Log.e("query1", sdf.format(Date()))
 
         cursor = dataBase?.rawQuery(
             "select r.relation_id, lon, lat, key, value, role, w.way_id from rtree_relation$scale r " +
@@ -236,7 +237,6 @@ class DBHelper(
 
             coordsWay.add(Pair(lon, lat))
         }
-        Log.e("query2", sdf.format(Date()))
         cursor.close()
         arrays.sortBy { tagSort(it.second) }
         return arrays

@@ -67,12 +67,7 @@ class Polygon(
         GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, 0)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ebo[0])
-        GLES20.glDrawElements(
-            GLES20.GL_TRIANGLES,
-            drawOrder.size,
-            GLES20.GL_UNSIGNED_SHORT,
-            0
-        )
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.size, GLES20.GL_UNSIGNED_SHORT, 0)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0)
     }
