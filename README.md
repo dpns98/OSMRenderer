@@ -9,6 +9,6 @@ Script should take several seconds to run, for Belgrade data it took me about 30
 And then replace SQLITE_DB file in OSMRenderer/app/src/main/assets/database/ folder with newly created file.
 
 <p float="left">
-  <img src="images/img1.jpg" width="30" />
-  <img src="images/img2.jpg" width="30" /> 
+  <img src="images/img1.jpg" width="100" />
+  <img src="images/img2.jpg" width="100" /> 
 </p>
