@@ -70,6 +70,48 @@ class DBHelper(
         return Pair((cursor.getFloat(0)+cursor.getFloat(1))/2, (cursor.getFloat(2)+cursor.getFloat(3))/2)
     }
 
+    fun knn(lon: Float, lat: Float, k: Int, value: String): MutableList<Triple<FloatArray, String, IntArray?>> {
+        val cursor = dataBase?.rawQuery(
+            "select way_id, lon, lat " +
+                "from way_nodes w join nodes n on w.node_id = n.node_id join ( " +
+                "select r.way_id as id, " +
+                "min(((max_lon+min_lon)/2-$lon)*((max_lon+min_lon)/2-$lon) + " +
+                "((max_lat+min_lat)/2-$lat)*((max_lat+min_lat)/2-$lat)) as distance " +
+                "from rtree_way1 r join way_tags t on t.way_id = r.way_id " +
+                "where value = '$value' group by r.way_id order by distance limit $k " +
+                ") knn on knn.id = way_id",
+            null
+        )
+
+        var currentId = -1
+        val coords = mutableListOf<Float>()
+        val arrays = mutableListOf<Triple<FloatArray, String, IntArray?>>()
+
+        while (cursor!!.moveToNext()) {
+            val id = cursor.getInt(0)
+            val lon = cursor.getFloat(1)
+            val lat = cursor.getFloat(2)
+
+            if (cursor.isFirst)
+                currentId = id
+
+            if (cursor.isLast) {
+                coords.add(lon)
+                coords.add(lat)
+            }
+
+            if (id != currentId || cursor.isLast) {
+                arrays.add(Triple(coords.toFloatArray(), "knn", null))
+                currentId = id
+                coords.clear()
+            }
+            coords.add(lon)
+            coords.add(lat)
+        }
+        cursor.close()
+        return arrays
+    }
+
     //returns triple of coordinates, tag name and indices of hole coordinates if they exist
     fun getGeometriesForExtent(extent: Extent, scale: Int): List<Triple<FloatArray, String, IntArray?>>{
         //query rtree on current scale for polygons and lines
@@ -252,6 +294,7 @@ class DBHelper(
 
     private fun tagSort(tag: String): Int{
         return when(tag){
+            "knn" -> 18
             "boundary" -> 17
             in listOf("building", "man_made") -> 16
             "motorway" -> 15

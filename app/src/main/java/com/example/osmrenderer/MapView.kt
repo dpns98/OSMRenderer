@@ -118,4 +118,14 @@ class MapView(context: Context, private val db: DBHelper) : GLSurfaceView(contex
         renderer.create = true
         requestRender()
     }
+
+    fun searchNearest(value: String, k: Int) {
+        renderer.knnArrays = db.knn(renderer.positionX, renderer.positionY, k, value)
+        requestRender()
+    }
+
+    fun cancelKNN() {
+        renderer.knnArrays = emptyList()
+        requestRender()
+    }
 }

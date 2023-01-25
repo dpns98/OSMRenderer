@@ -42,7 +42,9 @@ class MapRenderer(
     var scale: Float = 8000f
     @Volatile
     var arrays = listOf<Triple<FloatArray, String, IntArray?>>()
-    private var geometries: List<Geometry> = listOf()
+    @Volatile
+    var knnArrays = listOf<Triple<FloatArray, String, IntArray?>>()
+    private var geometries: MutableList<Geometry> = mutableListOf()
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0.87059f, 0.87059f, 0.87059f, 1.0f)
@@ -81,7 +83,9 @@ class MapRenderer(
             geometries.forEach {
                 it.release()
             }
-            geometries = createGeometries()
+            geometries = createGeometries(arrays)
+            if (knnArrays.isNotEmpty())
+                geometries.addAll(createGeometries(knnArrays))
         }
         geometries.forEach{
             if (it.isPath()){
@@ -103,10 +107,10 @@ class MapRenderer(
         )
     }
 
-    private fun createGeometries(): List<Geometry> {
+    private fun createGeometries(array: List<Triple<FloatArray, String, IntArray?>>): MutableList<Geometry> {
         val newGeometries = mutableListOf<Geometry>()
         //array of triples of coordinates, tags, and hole indices
-        arrays.forEach {
+        array.forEach {
             newGeometries.add(
                 if (it.second in listOf("highway", "boundary", "path", "way", "motorway", "street")) {
                     Line(
@@ -127,6 +131,7 @@ class MapRenderer(
 
     private fun getTagColor(tag: String): FloatArray {
         return when(tag) {
+            "knn" -> floatArrayOf(1f, 0f, 0f, 1f)
             "boundary" -> floatArrayOf(0.7f, 0.4f, 1f, 1.0f)
             in listOf("building", "man_made") -> floatArrayOf(0.6f, 0.6f, 0.6f, 1.0f)
             "motorway" -> floatArrayOf(1f, 0.7f, 0.4f, 1.0f)
