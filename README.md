@@ -12,3 +12,6 @@ And then replace SQLITE_DB file in OSMRenderer/app/src/main/assets/database/ fol
   <img src="images/img1.jpg" width="400" />
   <img src="images/img2.jpg" width="400" /> 
 </p>
+
+
+Author: Dusan Petrovic
